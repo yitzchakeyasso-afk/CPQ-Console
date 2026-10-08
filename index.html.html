@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול קווי CPQ - ממשק עריכה</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        h2 {
+            color: #0056b3;
+            margin-top: 0;
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #218838;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-edit {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .btn-edit:hover {
+            background-color: #e0a800;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            text-align: right;
+        }
+        th, td {
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+            vertical-align: top;
+        }
+        th {
+            background-color: #0056b3;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+        tr:hover {
+            background-color: #f1f3f5;
+        }
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        .modal-actions {
+            text-align: left;
+            margin-top: 15px;
+        }
+        .modal-actions button {
+            margin-right: 5px;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>
+        <span>שדרוג קו / העתקת צד ב' - ממשק ניהול CPQ</span>
+        <button class="btn" onclick="openModal()">+ הוסף קו חדש</button>
+    </h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>מספר CPQ</th>
+                <th>מספר לקוח</th>
+                <th>קוד קו ישן</th>
+                <th>מהירות קו ישן</th>
+                <th>קוד קו חדש</th>
+                <th>מהירות קו חדש</th>
+                <th>קו עובר למאסף ווילן</th>
+                <th>כתובות IP מוקצות לקו (לציין / prefix)</th>
+                <th>פעולות</th>
+            </tr>
+        </thead>
+        <tbody id="linesTableBody">
+            <!-- נתונים יטענו דינמית -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal הוספה / עריכה -->
+<div id="lineModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">הוספת קו חדש</h3>
+        <input type="hidden" id="editIndex" value="-1">
+        
+        <div class="form-group">
+            <label>מספר CPQ:</label>
+            <input type="text" id="cpqNumber" placeholder="לדוגמה: CPQ-30000877">
+        </div>
+        <div class="form-group">
+            <label>מספר לקוח:</label>
+            <input type="text" id="custNumber" placeholder="לדוגמה: CUST-984210">
+        </div>
+        <div class="form-group">
+            <label>קוד קו ישן:</label>
+            <input type="text" id="oldLineCode" placeholder="לדוגמה: 892331-16052826">
+        </div>
+        <div class="form-group">
+            <label>מהירות קו ישן:</label>
+            <input type="text" id="oldSpeed" placeholder="לדוגמה: שירות רוחב פס בחווה">
+        </div>
+        <div class="form-group">
+            <label>קוד קו חדש:</label>
+            <input type="text" id="newLineCode" placeholder="לדוגמה: 7019140-882998-10043070 - AFK">
+        </div>
+        <div class="form-group">
+            <label>מהירות קו חדש:</label>
+            <input type="text" id="newSpeed" placeholder="לדוגמה: 2/2G">
+        </div>
+        <div class="form-group">
+            <label>קו עובר למאסף ווילן:</label>
+            <input type="text" id="migrationTarget" placeholder="לדוגמה: העתקת תשתית מטרו ממאסף קיים">
+        </div>
+        <div class="form-group">
+            <label>כתובות IP מוקצות לקו (לציין / prefix) (מופרדות בשורות):</label>
+            <textarea id="ipAddresses" rows="4" placeholder="הכנס כל כתובת IP בשורה חדשה"></textarea>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal()">ביטול</button>
+            <button class="btn" onclick="saveLine()">שמור</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let linesData = JSON.parse(localStorage.getItem('cpq_lines_v3')) || [
+        {
+            cpqNumber: "CPQ-30000877",
+            custNumber: "CUST-984210",
+            oldLineCode: "892331-16052826",
+            oldSpeed: "שירות רוחב פס בחווה (מטרו קיים)",
+            newLineCode: "7019140-882998-10043070 - AFK\n(VLAN 183)",
+            newSpeed: "2/2G (ספק בלבד)",
+            migrationTarget: "העתקת תשתית מטרו ממאסף קיים אצל הלקוח אל מאסף AFK",
+            ipAddresses: "VLAN 3075 Prefix Length Static 84.110.158.129\n82.81.228.168/30\n84.110.158.128/27\n192.116.105.240/28\n212.199.53.160/27"
+        }
+    ];
+
+    function renderTable() {
+        const tbody = document.getElementById('linesTableBody');
+        tbody.innerHTML = '';
+
+        linesData.forEach((item, index) => {
+            const ipsFormatted = item.ipAddresses.split('\n').map(ip => `<div>${ip}</div>`).join('');
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${item.cpqNumber}</strong></td>
+                <td>${item.custNumber}</td>
+                <td><strong>${item.oldLineCode}</strong></td>
+                <td>${item.oldSpeed}</td>
+                <td><strong>${item.newLineCode.replace(/\n/g, '<br>')}</strong></td>
+                <td><strong>${item.newSpeed}</strong></td>
+                <td>${item.migrationTarget}</td>
+                <td>${ipsFormatted}</td>
+                <td>
+                    <button class="btn btn-edit" onclick="editLine(${index})">ערוך</button>
+                    <button class="btn btn-danger" onclick="deleteLine(${index})">מחק</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        localStorage.setItem('cpq_lines_v3', JSON.stringify(linesData));
+    }
+
+    function openModal() {
+        document.getElementById('modalTitle').innerText = "הוספת קו חדש";
+        document.getElementById('editIndex').value = "-1";
+        
+        document.getElementById('cpqNumber').value = '';
+        document.getElementById('custNumber').value = '';
+        document.getElementById('oldLineCode').value = '';
+        document.getElementById('oldSpeed').value = '';
+        document.getElementById('newLineCode').value = '';
+        document.getElementById('newSpeed').value = '';
+        document.getElementById('migrationTarget').value = '';
+        document.getElementById('ipAddresses').value = '';
+
+        document.getElementById('lineModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('lineModal').style.display = 'none';
+    }
+
+    function editLine(index) {
+        document.getElementById('modalTitle').innerText = "עריכת קו קיים";
+        document.getElementById('editIndex').value = index;
+
+        const item = linesData[index];
+        document.getElementById('cpqNumber').value = item.cpqNumber;
+        document.getElementById('custNumber').value = item.custNumber;
+        document.getElementById('oldLineCode').value = item.oldLineCode;
+        document.getElementById('oldSpeed').value = item.oldSpeed;
+        document.getElementById('newLineCode').value = item.newLineCode;
+        document.getElementById('newSpeed').value = item.newSpeed;
+        document.getElementById('migrationTarget').value = item.migrationTarget;
+        document.getElementById('ipAddresses').value = item.ipAddresses;
+
+        document.getElementById('lineModal').style.display = 'flex';
+    }
+
+    function saveLine() {
+        const index = parseInt(document.getElementById('editIndex').value);
+        
+        const newItem = {
+            cpqNumber: document.getElementById('cpqNumber').value,
+            custNumber: document.getElementById('custNumber').value,
+            oldLineCode: document.getElementById('oldLineCode').value,
+            oldSpeed: document.getElementById('oldSpeed').value,
+            newLineCode: document.getElementById('newLineCode').value,
+            newSpeed: document.getElementById('newSpeed').value,
+            migrationTarget: document.getElementById('migrationTarget').value,
+            ipAddresses: document.getElementById('ipAddresses').value
+        };
+
+        if (index === -1) {
+            linesData.push(newItem);
+        } else {
+            linesData[index] = newItem;
+        }
+
+        closeModal();
+        renderTable();
+    }
+
+    function deleteLine(index) {
+        if (confirm("האם אתה בטוח שברצונך למחוק קו זה?")) {
+            linesData.splice(index, 1);
+            renderTable();
+        }
+    }
+
+    window.onload = renderTable;
+</script>
+
+</body>
+</html>
